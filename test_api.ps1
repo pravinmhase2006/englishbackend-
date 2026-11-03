@@ -91,4 +91,18 @@ $progSummary = Invoke-RestMethod -Uri "$baseUrl/api/v1/progress/summary" -Method
 Write-Host "Overall Fluency: $($progSummary.data.overallFluencyScore)%"
 Write-Host "Total XP: $($progSummary.data.totalXp), Streak: $($progSummary.data.streakDays) days"
 
+Write-Host "`n=== 14. Admin Overview & System Settings ==="
+$adminHeaders = @{
+    "x-admin-key" = "speakup-admin-secret"
+}
+$adminOverview = Invoke-RestMethod -Uri "$baseUrl/api/v1/admin/overview" -Method Get -Headers $adminHeaders
+Write-Host "Admin Stats Total Users: $($adminOverview.data.stats.totalUsers)"
+Write-Host "Admin Stats Total Vocab: $($adminOverview.data.stats.totalVocab)"
+$adminSettings = Invoke-RestMethod -Uri "$baseUrl/api/v1/admin/settings" -Method Get -Headers $adminHeaders
+Write-Host "Admin AI Engine: $($adminSettings.data.aiModel)"
+
+Write-Host "`n=== 15. Admin User Search & Filter ==="
+$adminUsers = Invoke-RestMethod -Uri "$baseUrl/api/v1/admin/users?search=alex" -Method Get -Headers $adminHeaders
+Write-Host "Admin User Search found: $($adminUsers.data.Count) user(s)"
+
 Write-Host "`n=== ALL API TESTS PASSED! ==="
