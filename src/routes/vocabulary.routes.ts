@@ -35,6 +35,17 @@ export async function vocabularyRoutes(app: FastifyInstance) {
     VocabularyController.getWords
   );
 
+  app.get(
+    '/words',
+    {
+      schema: {
+        tags: ['Vocabulary'],
+        summary: 'Alias for browsing vocabulary words',
+      },
+    },
+    VocabularyController.getWords
+  );
+
   app.post(
     '/:wordId/progress',
     {
