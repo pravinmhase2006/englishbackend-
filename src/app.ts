@@ -88,6 +88,19 @@ export function buildApp(): FastifyInstance {
     };
   });
 
+  app.get('/api/health', async () => {
+    const isDbConnected = mongoose.connection.readyState === 1;
+    return {
+      status: isDbConnected ? 'healthy' : 'degraded',
+      service: 'SpeakUp AI Backend',
+      database: isDbConnected ? 'connected' : 'disconnected',
+      uptimeSeconds: Math.floor(process.uptime()),
+      timestamp: new Date().toISOString(),
+      version: '1.0.0',
+      documentation: '/docs',
+    };
+  });
+
   // Register API v1 routes
   app.register(apiRoutes, { prefix: '/api/v1' });
 
