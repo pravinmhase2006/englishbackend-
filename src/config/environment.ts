@@ -13,4 +13,6 @@ export const ENV = {
   REFRESH_TOKEN_SECRET: process.env.REFRESH_TOKEN_SECRET || 'speakup_refresh_token_super_secret_key_2026',
   REFRESH_TOKEN_EXPIRES_IN: process.env.REFRESH_TOKEN_EXPIRES_IN || '30d',
   UPLOAD_DIR: process.env.UPLOAD_DIR || './uploads',
+  GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
+  GROQ_API_KEY: process.env.GROQ_API_KEY || '',
 };

@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import { SpeakingSessionModel, ISpeakingSession, IWordScore } from '../models/speaking_session.model';
 import { UserModel } from '../models/user.model';
 import { XP_REWARDS } from '../constants/app_constants';
+import { AiService } from './ai.service';
 
 export class SpeakingService {
   static getPresetTopics() {
@@ -103,12 +104,15 @@ export class SpeakingService {
       wordScores.reduce((acc, curr) => acc + curr.score, 0) / (wordScores.length || 1)
     );
 
-    const tips = [
-      'Excellent intonation! Your pitch variation feels relaxed and natural. Keep linking consonant endings.',
-      'Clear stress on key syllables. Try slightly relaxing vowel elongation on unstressed words.',
-      'Great rhythm and cadence! Natural phrasing observed throughout.',
-    ];
-    const coachTip = tips[Math.floor(Math.random() * tips.length)];
+    // Generate AI Tutor Response (Gemini 1.5 Flash with intelligent heuristic fallback)
+    const aiResult = await AiService.generateTutorResponse(
+      userText,
+      session.topicTitle,
+      session.cefrLevel
+    );
+
+    const coachTip = aiResult.coachTip;
+    const fluencyScore = Math.round((averageScore + aiResult.fluencyScore) / 2);
 
     // 1. Add User spoken message
     session.messages.push({
@@ -116,22 +120,15 @@ export class SpeakingService {
       text: userText,
       audioDuration,
       wordScores,
-      overallFluency: averageScore,
+      overallFluency: fluencyScore,
       coachTip,
       timestamp: new Date(),
     });
 
     // 2. Generate Contextual AI Response
-    const aiResponses = [
-      "Fantastic! That sounded very natural. Could you also tell me how you usually organize your mornings?",
-      "Great choice! I have marked your order. Would you prefer having that for here or to go?",
-      "That is a great perspective. How do you usually handle challenges when working under tight deadlines?",
-    ];
-    const nextAiText = aiResponses[session.messages.length % aiResponses.length];
-
     session.messages.push({
       sender: 'ai',
-      text: nextAiText,
+      text: aiResult.aiText,
       audioDuration: '0:03',
       timestamp: new Date(),
     });
