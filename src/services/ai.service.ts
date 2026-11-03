@@ -11,8 +11,9 @@ export class AiService {
   private static geminiClient: GoogleGenerativeAI | null = null;
 
   private static getGemini(): GoogleGenerativeAI | null {
-    if (!this.geminiClient && ENV.GEMINI_API_KEY) {
-      this.geminiClient = new GoogleGenerativeAI(ENV.GEMINI_API_KEY);
+    const key = ENV.GEMINI_API_KEY?.trim();
+    if (!this.geminiClient && key) {
+      this.geminiClient = new GoogleGenerativeAI(key);
     }
     return this.geminiClient;
   }
@@ -102,7 +103,8 @@ JSON response only:
     audioBuffer: Buffer,
     filename: string
   ): Promise<string | null> {
-    if (!ENV.GROQ_API_KEY) {
+    const groqKey = ENV.GROQ_API_KEY?.trim();
+    if (!groqKey) {
       return null;
     }
 
@@ -116,7 +118,7 @@ JSON response only:
       const response = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${ENV.GROQ_API_KEY}`,
+          Authorization: `Bearer ${groqKey}`,
         },
         body: formData,
       });
