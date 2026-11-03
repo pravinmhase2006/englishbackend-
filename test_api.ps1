@@ -107,4 +107,29 @@ Write-Host "`n=== 15. Admin User Search & Filter ==="
 $adminUsers = Invoke-RestMethod -Uri "$baseUrl/api/v1/admin/users?search=alex" -Method Get -Headers $adminHeaders
 Write-Host "Admin User Search found: $($adminUsers.data.Count) user(s)"
 
-Write-Host "`n=== ALL API TESTS PASSED! ==="
+Write-Host "`n=== 16. AI Chat (POST /api/v1/ai/chat) ==="
+$aiChatBody = @{
+    message = "I would like to practice speaking English fluently."
+    topicTitle = "Daily Fluency Practice"
+    cefrLevel = "B1"
+} | ConvertTo-Json
+$aiChatRes = Invoke-RestMethod -Uri "$baseUrl/api/v1/ai/chat" -Method Post -Body $aiChatBody -ContentType "application/json"
+Write-Host "AI Chat Message: $($aiChatRes.data.message)"
+Write-Host "AI Coach Tip: $($aiChatRes.data.coachTip)"
+
+Write-Host "`n=== 17. Voice Turn Pipeline (POST /api/v1/voice/process) ==="
+$voiceProcBody = @{
+    userText = "Could you tell me how to prepare for an English interview?"
+    topicTitle = "Interview Preparation"
+    cefrLevel = "B2"
+} | ConvertTo-Json
+$voiceProcRes = Invoke-RestMethod -Uri "$baseUrl/api/v1/voice/process" -Method Post -Body $voiceProcBody -ContentType "application/json"
+Write-Host "Transcribed Text: $($voiceProcRes.data.transcribedText)"
+Write-Host "AI Response: $($voiceProcRes.data.aiText)"
+Write-Host "Acoustic Score: $($voiceProcRes.data.fluencyScore)%"
+
+Write-Host "`n=== 18. API Health Check (GET /api/v1/health) ==="
+$apiHealth = Invoke-RestMethod -Uri "$baseUrl/api/v1/health" -Method Get
+Write-Host "API Health: $($apiHealth.status), Database: $($apiHealth.database)"
+
+Write-Host "`n=== ALL 18 API TESTS PASSED! ==="
