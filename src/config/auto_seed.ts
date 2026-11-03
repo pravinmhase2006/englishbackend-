@@ -7,14 +7,14 @@ import { hashPassword } from '../utils/password.utils';
 export async function autoSeedDatabase(): Promise<void> {
   try {
     // 1. Ensure Default User (Alex Carter)
-    const userCount = await UserModel.countDocuments();
-    if (userCount === 0) {
+    const alex = await UserModel.findOne({ email: 'alex.carter@example.com' });
+    if (!alex) {
       const passwordHash = await hashPassword('password123');
       await UserModel.create({
         name: 'Alex Carter',
         email: 'alex.carter@example.com',
         passwordHash,
-        role: 'learner',
+        role: 'admin',
         cefrLevel: 'B1',
         streakDays: 14,
         studyTimeMinutesToday: 45,
