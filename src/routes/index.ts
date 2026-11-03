@@ -6,6 +6,7 @@ import { vocabularyRoutes } from './vocabulary.routes';
 import { grammarRoutes } from './grammar.routes';
 import { challengeRoutes } from './challenge.routes';
 import { progressRoutes } from './progress.routes';
+import { adminRoutes } from './admin.routes';
 
 export async function apiRoutes(app: FastifyInstance) {
   app.register(authRoutes, { prefix: '/auth' });
@@ -15,4 +16,5 @@ export async function apiRoutes(app: FastifyInstance) {
   app.register(grammarRoutes, { prefix: '/grammar' });
   app.register(challengeRoutes, { prefix: '/daily-challenges' });
   app.register(progressRoutes, { prefix: '/progress' });
+  app.register(adminRoutes, { prefix: '/admin' });
 }
