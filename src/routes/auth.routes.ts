@@ -111,4 +111,6 @@ export async function authRoutes(app: FastifyInstance) {
     },
     AuthController.socialLogin
   );
+
+  app.post('/social-login', AuthController.socialLogin);
 }
