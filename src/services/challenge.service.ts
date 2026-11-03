@@ -80,11 +80,6 @@ export class ChallengeService {
         $inc: { totalXp: xpEarned, streakDays: 1, studyTimeMinutesToday: 5 },
         $set: { lastActiveDate: new Date() },
       });
-    } else {
-      await UserModel.findOneAndUpdate({}, {
-        $inc: { totalXp: xpEarned, streakDays: 1, studyTimeMinutesToday: 5 },
-        $set: { lastActiveDate: new Date() },
-      });
     }
 
     return {

@@ -142,10 +142,6 @@ export class SpeakingService {
       await UserModel.findByIdAndUpdate(userId, {
         $inc: { totalXp: XP_REWARDS.SPEAKING_SESSION_COMPLETED, studyTimeMinutesToday: 2 },
       });
-    } else {
-      await UserModel.findOneAndUpdate({}, {
-        $inc: { totalXp: XP_REWARDS.SPEAKING_SESSION_COMPLETED, studyTimeMinutesToday: 2 },
-      });
     }
 
     return session;

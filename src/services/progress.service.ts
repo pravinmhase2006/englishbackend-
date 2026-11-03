@@ -8,11 +8,7 @@ export class ProgressService {
       const user = await UserModel.findById(userId);
       if (user) return user;
     }
-    const defaultUser = await UserModel.findOne();
-    if (!defaultUser) {
-      throw new Error('User not found');
-    }
-    return defaultUser;
+    throw new Error('User not found');
   }
 
   static async getSummary(userId: string) {

@@ -8,11 +8,7 @@ export class UserService {
       const user = await UserModel.findById(userId);
       if (user) return user;
     }
-    const defaultUser = await UserModel.findOne();
-    if (!defaultUser) {
-      throw new Error('User not found');
-    }
-    return defaultUser;
+    throw new Error('User not found');
   }
 
   static async getProfile(userId: string): Promise<IUser> {
@@ -20,11 +16,7 @@ export class UserService {
       const user = await UserModel.findById(userId).select('-passwordHash');
       if (user) return user;
     }
-    const defaultUser = await UserModel.findOne().select('-passwordHash');
-    if (!defaultUser) {
-      throw new Error('User not found');
-    }
-    return defaultUser;
+    throw new Error('User not found');
   }
 
   static async updateProfile(
