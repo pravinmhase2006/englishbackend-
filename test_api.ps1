@@ -1,4 +1,6 @@
-$baseUrl = "http://127.0.0.1:5000"
+param(
+    [string]$baseUrl = "https://speakup-ai-backend-ltus.onrender.com"
+)
 
 Write-Host "=== 1. Health Check ==="
 $health = Invoke-RestMethod -Uri "$baseUrl/health" -Method Get
