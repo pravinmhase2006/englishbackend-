@@ -86,4 +86,42 @@ export async function vocabularyRoutes(app: FastifyInstance) {
     },
     VocabularyController.getMyDeck
   );
+
+  app.post(
+    '/evaluate-pronunciation',
+    {
+      schema: {
+        tags: ['Vocabulary'],
+        summary: 'Evaluate user pronunciation of a target word with phonetic feedback',
+        body: {
+          type: 'object',
+          required: ['targetWord'],
+          properties: {
+            targetWord: { type: 'string', example: 'Confident' },
+            spokenText: { type: 'string', example: 'confident' },
+            audioBase64: { type: 'string' },
+          },
+        },
+      },
+    },
+    VocabularyController.evaluatePronunciation
+  );
+
+  app.post(
+    '/lookup-word',
+    {
+      schema: {
+        tags: ['Vocabulary'],
+        summary: 'Lookup or AI-generate educational details for any English word',
+        body: {
+          type: 'object',
+          required: ['word'],
+          properties: {
+            word: { type: 'string', example: 'articulate' },
+          },
+        },
+      },
+    },
+    VocabularyController.lookupWord
+  );
 }

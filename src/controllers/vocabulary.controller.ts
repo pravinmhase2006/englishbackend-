@@ -1,5 +1,6 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { VocabularyService } from '../services/vocabulary.service';
+import { AiService } from '../services/ai.service';
 import { updateWordProgressSchema } from '../validators/exercise.validator';
 import { sendSuccess, sendError } from '../utils/response.utils';
 
@@ -62,6 +63,49 @@ export class VocabularyController {
       return sendSuccess(reply, deck, 'Saved vocabulary deck retrieved');
     } catch (error: any) {
       return sendError(reply, error.message || 'Failed to fetch deck', 400);
+    }
+  }
+
+  static async evaluatePronunciation(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const body = (request.body || {}) as {
+        targetWord?: string;
+        spokenText?: string;
+        audioBase64?: string;
+      };
+
+      const targetWord = (body.targetWord || 'Confident').trim();
+      let spokenText = (body.spokenText || '').trim();
+
+      if (!spokenText && body.audioBase64) {
+        const buf = Buffer.from(body.audioBase64, 'base64');
+        const whisper = await AiService.transcribeAudioWithGroqWhisper(buf, 'pronunciation.m4a');
+        if (whisper) spokenText = whisper;
+      }
+
+      if (!spokenText) {
+        spokenText = targetWord;
+      }
+
+      const evaluation = await AiService.evaluatePronunciation(targetWord, spokenText);
+      return sendSuccess(reply, evaluation, 'Pronunciation evaluated successfully');
+    } catch (err: any) {
+      return sendError(reply, err.message || 'Pronunciation evaluation failed', 500);
+    }
+  }
+
+  static async lookupWord(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const body = (request.body || {}) as { word?: string };
+      const word = (body.word || '').trim();
+      if (!word) {
+        return sendError(reply, 'Word is required', 400);
+      }
+
+      const card = await VocabularyService.lookupOrGenerateWord(word);
+      return sendSuccess(reply, card, 'Word details retrieved');
+    } catch (err: any) {
+      return sendError(reply, err.message || 'Word lookup failed', 500);
     }
   }
 }

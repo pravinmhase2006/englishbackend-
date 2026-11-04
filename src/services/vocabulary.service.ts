@@ -3,6 +3,7 @@ import { VocabularyWordModel, IVocabularyWord } from '../models/vocabulary.model
 import { UserVocabularyModel } from '../models/user_vocabulary.model';
 import { UserModel } from '../models/user.model';
 import { XP_REWARDS } from '../constants/app_constants';
+import { AiService } from './ai.service';
 
 export class VocabularyService {
   static async getWordOfTheDay(): Promise<IVocabularyWord | null> {
@@ -95,6 +96,30 @@ export class VocabularyService {
       }
     }
 
+    return created;
+  }
+
+  static async lookupOrGenerateWord(word: string) {
+    const clean = word.trim();
+    let existing = await VocabularyWordModel.findOne({
+      word: { $regex: `^${clean}$`, $options: 'i' },
+    });
+
+    if (existing) {
+      return existing;
+    }
+
+    const generated = await AiService.generateWordCard(clean);
+    const created = await VocabularyWordModel.create({
+      word: generated.word,
+      phonetic: generated.phonetic,
+      partOfSpeech: generated.partOfSpeech,
+      cefrLevel: generated.cefrLevel,
+      definition: generated.definition,
+      exampleSentence: generated.exampleSentence,
+      memoryAnchor: generated.memoryAnchor,
+      isWordOfTheDay: false,
+    });
     return created;
   }
 
