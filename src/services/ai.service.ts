@@ -41,17 +41,85 @@ export class AiService {
     return this.geminiClient;
   }
 
+  private static async callGroqChat(prompt: string, systemPrompt?: string): Promise<string | null> {
+    const groqKey = ENV.GROQ_API_KEY?.trim();
+    if (!groqKey) return null;
+    try {
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${groqKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'qwen/qwen3.8-27b',
+          messages: [
+            {
+              role: 'system',
+              content: systemPrompt || 'You are Maya, a warm, professional, native English speaking coach in the SpeakUp app. You always respond in valid JSON format only.',
+            },
+            {
+              role: 'user',
+              content: prompt,
+            },
+          ],
+          temperature: 0.7,
+          max_tokens: 350,
+        }),
+      });
+      if (!response.ok) return null;
+      const data: any = await response.json();
+      return data.choices?.[0]?.message?.content || null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   /**
-   * Generates live AI Tutor response using Google Gemini 1.5 Flash.
-   * If GEMINI_API_KEY is not configured, gracefully falls back to dynamic conversational heuristics.
+   * Generates live AI Tutor response using Google Gemini 1.5 Flash or Groq Qwen.
+   * If neither is available, gracefully falls back to dynamic conversational heuristics.
    */
   static async generateTutorResponse(
     userMessage: string,
     topicTitle: string,
     cefrLevel: string
   ): Promise<IAiTutorResult> {
-    const gemini = this.getGemini();
+    const prompt = `
+Topic: "${topicTitle}" (Target Learner Level: ${cefrLevel}).
+The user said: "${userMessage}"
 
+Respond in valid JSON format only with three exact keys:
+1. "aiText": A natural, conversational response continuing the dialogue (1-2 sentences).
+2. "coachTip": A short, constructive English pronunciation or grammar tip based on the user's sentence (1 sentence).
+3. "fluencyScore": An integer between 85 and 98 evaluating the naturalness and vocabulary of their input.
+
+JSON response only:
+`;
+
+    // 1. Try Groq (ultra-low latency & verified active)
+    if (ENV.GROQ_API_KEY?.trim()) {
+      try {
+        const groqResp = await this.callGroqChat(prompt);
+        if (groqResp) {
+          const jsonMatch = groqResp.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0]);
+            if (parsed.aiText) {
+              return {
+                aiText: parsed.aiText,
+                coachTip: parsed.coachTip || "Great rhythm and cadence! Natural phrasing observed throughout.",
+                fluencyScore: typeof parsed.fluencyScore === 'number' ? parsed.fluencyScore : 94,
+              };
+            }
+          }
+        }
+      } catch (err: any) {
+        console.warn('[AiService] Groq call skipped or failed:', err.message);
+      }
+    }
+
+    // 2. Try Gemini
+    const gemini = this.getGemini();
     if (gemini) {
       try {
         const model = gemini.getGenerativeModel({
@@ -62,23 +130,9 @@ export class AiService {
           },
         });
 
-        const prompt = `
-You are Maya, a warm, professional, native English speaking coach in the SpeakUp app.
-Topic: "${topicTitle}" (Target Learner Level: ${cefrLevel}).
-The user said: "${userMessage}"
-
-Respond in valid JSON format with three exact keys:
-1. "aiText": A natural, conversational response continuing the dialogue (1-2 sentences).
-2. "coachTip": A short, constructive English pronunciation or grammar tip based on the user's sentence (1 sentence).
-3. "fluencyScore": An integer between 80 and 99 evaluating the naturalness and vocabulary of their input.
-
-JSON response only:
-`;
-
         const result = await model.generateContent(prompt);
         const responseText = result.response.text().trim();
 
-        // Extract JSON from response
         const jsonMatch = responseText.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
           const parsed = JSON.parse(jsonMatch[0]);
@@ -169,19 +223,7 @@ JSON response only:
   ): Promise<IPronunciationEvaluation> {
     const cleanTarget = targetWord.trim();
     const cleanSpoken = spokenText.trim();
-    const gemini = this.getGemini();
-
-    if (gemini) {
-      try {
-        const model = gemini.getGenerativeModel({
-          model: 'gemini-1.5-flash',
-          generationConfig: {
-            temperature: 0.3,
-            maxOutputTokens: 350,
-          },
-        });
-
-        const prompt = `
+    const prompt = `
 You are an expert native English phonetician and pronunciation coach in SpeakUp app.
 Target Word: "${cleanTarget}"
 Learner Spoke / Transcribed: "${cleanSpoken}"
@@ -202,6 +244,46 @@ Return strict JSON with this exact schema:
 
 JSON only:
 `;
+
+    // 1. Try Groq
+    if (ENV.GROQ_API_KEY?.trim()) {
+      try {
+        const groqResp = await this.callGroqChat(prompt, 'You are an expert native English phonetician. Respond in JSON only.');
+        if (groqResp) {
+          const jsonMatch = groqResp.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0]);
+            if (typeof parsed.score === 'number') {
+              return {
+                score: Math.min(100, Math.max(0, parsed.score)),
+                isCorrect: parsed.isCorrect ?? (parsed.score >= 80),
+                recognizedText: parsed.recognizedText || cleanSpoken,
+                targetWord: cleanTarget,
+                phonetic: parsed.phonetic || `/${cleanTarget.toLowerCase()}/`,
+                syllableStress: parsed.syllableStress || cleanTarget.toUpperCase(),
+                correction: parsed.correction || 'Good pronunciation attempt!',
+                detailedFeedback: parsed.detailedFeedback || 'Ensure clear vocalization of vowels.',
+                tip: parsed.tip || 'Stress the primary syllable with a slightly higher pitch.',
+              };
+            }
+          }
+        }
+      } catch (err: any) {
+        console.warn('[AiService] Groq pronunciation evaluation error:', err.message);
+      }
+    }
+
+    // 2. Try Gemini
+    const gemini = this.getGemini();
+    if (gemini) {
+      try {
+        const model = gemini.getGenerativeModel({
+          model: 'gemini-1.5-flash',
+          generationConfig: {
+            temperature: 0.3,
+            maxOutputTokens: 350,
+          },
+        });
 
         const result = await model.generateContent(prompt);
         const text = result.response.text().trim();
